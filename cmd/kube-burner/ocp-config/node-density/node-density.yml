@@ -21,7 +21,7 @@ jobs:
     namespacedIterations: false
     podWait: false
     waitWhenFinished: true
-    preLoadImages: true
+    preLoadImages: false
     preLoadPeriod: 10s
     namespaceLabels:
       security.openshift.io/scc.podSecurityLabelSync: false
@@ -33,4 +33,4 @@ jobs:
       - objectTemplate: pod.yml
         replicas: 1
         inputVars:
-          containerImage: registry.k8s.io/pause:3.1
+          containerImage: registry.redhat.io/ubi8/python-311

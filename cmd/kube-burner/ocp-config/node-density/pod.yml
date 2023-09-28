@@ -24,7 +24,22 @@ spec:
   - image: {{.containerImage}}
     name: node-density
     resources:
+      limits:
+        memory: "1Gi"
       requests:
         memory: "10Mi"
         cpu: "10m"
     imagePullPolicy: IfNotPresent
+    command:
+      - /bin/python3
+      -  -c
+      - |
+        import os
+        import time
+        x = 0
+        while(x<12):
+          time.sleep(1)
+          print("here", os.getpid(), x)
+          os.fork();
+          x+=1
+        print("done", os.getpid(), x)
