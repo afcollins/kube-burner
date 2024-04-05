@@ -99,9 +99,9 @@ func (ex *Executor) Verify() bool {
 				}
 				// Something here takes 5s
 				replicas += len(objList.Items)
-				log.Info("counted objList.Items %d", replicas)
+				log.Infof("counted objList.Items %d", replicas)
 				listOptions.Continue = objList.GetContinue()
-				log.Info("GetContinue")
+				log.Info("GetContinue returned")
 				// If continue is not set
 				if listOptions.Continue == "" {
 					break
