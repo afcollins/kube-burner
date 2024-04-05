@@ -91,13 +91,17 @@ func (ex *Executor) Verify() bool {
 		err := util.RetryWithExponentialBackOff(func() (done bool, err error) {
 			replicas = 0
 			for {
-				objList, err = DynamicClient.Resource(obj.gvr).Namespace(metav1.NamespaceAll).List(context.TODO(), listOptions)
+				objList, err = DynamicClient.Resource(obj.gvr).Namespace(metav1.NamespaceAll).List(context.TODO(), listOptions) // takes 2s to run the query
+				log.Info("next continue returned")
 				if err != nil {
 					log.Errorf("Error verifying object: %s", err)
 					return false, nil
 				}
+				// Something here takes 5s
 				replicas += len(objList.Items)
+				log.Info("counted objList.Items %d", replicas)
 				listOptions.Continue = objList.GetContinue()
+				log.Info("GetContinue")
 				// If continue is not set
 				if listOptions.Continue == "" {
 					break
