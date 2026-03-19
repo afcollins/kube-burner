@@ -1,0 +1,8 @@
+- endpoint: http://localhost:9090
+  indexer:
+    type: tsdb
+  metrics: [metrics-histogram.yml]
+- endpoint: http://localhost:9090
+  indexer:
+    type: local
+  metrics: [metrics-histogram.yml]

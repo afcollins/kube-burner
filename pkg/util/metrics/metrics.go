@@ -16,6 +16,7 @@ package metrics
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/cloud-bulldozer/go-commons/v2/indexers"
 	"github.com/kube-burner/kube-burner/v2/pkg/alerting"
@@ -69,7 +70,7 @@ func ProcessMetricsScraperConfig(scraperConfig ScraperConfig) Scraper {
 			} else {
 				indexerAlias = metricsEndpoint.Alias
 			}
-			if metricsEndpoint.Type == indexers.LocalIndexer {
+			if slices.Contains([]indexers.IndexerType{indexers.LocalIndexer, indexers.TSDBIndexer}, metricsEndpoint.Type) {
 				if metricsEndpoint.MetricsDirectory == "collected-metrics-{{.UUID}}" {
 					if metricsDirectoryFlag != "" && metricsDirectoryFlag != "collected-metrics-{{.UUID}}" {
 						metricsEndpoint.MetricsDirectory = metricsDirectoryFlag

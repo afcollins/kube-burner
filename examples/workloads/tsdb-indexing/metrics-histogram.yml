@@ -1,0 +1,97 @@
+# API server
+
+# sum, avg, min, max, stddev, p01, p10, p25, p50, p75, p90, p99
+- query: avg(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container)
+  metricName: burner_container_cpu_irate_container_avg
+
+- query: stddev(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container)
+  metricName: burner_container_cpu_irate_container_stddev
+
+- query: avg(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (namespace)
+  metricName: burner_container_cpu_irate_namespace_avg
+
+- query: stddev(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (namespace)
+  metricName: burner_container_cpu_irate_namespace_stddev
+
+- query: (sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)) > 0
+  metricName: containerCPU
+
+#- query: avg(container_memory_rss{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}) by (container)
+#  metricName: burner_container_memory_container_avg
+#
+#- query: stddev(container_memory_rss{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}) by (container)
+#  metricName: burner_container_memory_container_stddev
+
+#- query: quantile(0.0,sum by (instance, mode)(rate(node_cpu_seconds_total{job=~".*"}[2m:30s])) * 100)
+#  metricName: burner_node_cpu_seconds_histogram_000
+#
+#- query: quantile(0.0,(sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)))
+#  metricName: burner_container_cpu_cpu_seconds_histogram_000
+#
+#- query: quantile(0.1,(sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)))
+#  metricName: burner_container_cpu_cpu_seconds_histogram_010
+#
+#- query: quantile(0.2,(sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)))
+#  metricName: burner_container_cpu_cpu_seconds_histogram_020
+#
+#- query: quantile(0.3,(sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)))
+#  metricName: burner_container_cpu_cpu_seconds_histogram_030
+#
+#- query: quantile(0.4,(sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)))
+#  metricName: burner_container_cpu_cpu_seconds_histogram_040
+#
+#- query: quantile(0.5,(sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)))
+#  metricName: burner_container_cpu_cpu_seconds_histogram_050
+#
+#- query: quantile(0.6,(sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)))
+#  metricName: burner_container_cpu_cpu_seconds_histogram_060
+#
+#- query: quantile(0.7,(sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)))
+#  metricName: burner_container_cpu_cpu_seconds_histogram_070
+#
+#- query: quantile(0.8,(sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)))
+#  metricName: burner_container_cpu_cpu_seconds_histogram_080
+#
+#- query: quantile(0.9,(sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)))
+#  metricName: burner_container_cpu_cpu_seconds_histogram_090
+#
+#- query: quantile(1,(sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)))
+#  metricName: burner_container_cpu_cpu_seconds_histogram_100
+
+#- query: quantile(0.90,(sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)))
+#  metricName: burner_container_cpu_cpu_seconds_histogram_090
+#
+#- query: quantile(0.91,(sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)))
+#  metricName: burner_container_cpu_cpu_seconds_histogram_091
+#
+#- query: quantile(0.92,(sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)))
+#  metricName: burner_container_cpu_cpu_seconds_histogram_092
+#
+#- query: quantile(0.93,(sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)))
+#  metricName: burner_container_cpu_cpu_seconds_histogram_093
+#
+#- query: quantile(0.94,(sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)))
+#  metricName: burner_container_cpu_cpu_seconds_histogram_094
+#
+#- query: quantile(0.95,(sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)))
+#  metricName: burner_container_cpu_cpu_seconds_histogram_095
+#
+#- query: quantile(0.96,(sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)))
+#  metricName: burner_container_cpu_cpu_seconds_histogram_096
+#
+#- query: quantile(0.97,(sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)))
+#  metricName: burner_container_cpu_cpu_seconds_histogram_097
+#
+#- query: quantile(0.98,(sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)))
+#  metricName: burner_container_cpu_cpu_seconds_histogram_098
+#
+#- query: quantile(0.99,(sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)))
+#  metricName: burner_container_cpu_cpu_seconds_histogram_099
+
+#- query: node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate
+#  metricName: node_namespace_pod_container_container_cpu_usage_seconds_total_sum_irate
+#- query: (sum(irate(container_cpu_usage_seconds_total{name!="",container!~"POD|",namespace=~"openshift-.*|cilium|stackrox|calico.*|tigera.*"}[2m]) * 100) by (container, pod, namespace, node)) > 0
+#  metricName: containerCPU
+
+#- query: quantile(0.0,container_cpu_usage_seconds_total_container_sum_irate_pod_node_container_namespace_name)
+#  metricName: container_cpu_le_050

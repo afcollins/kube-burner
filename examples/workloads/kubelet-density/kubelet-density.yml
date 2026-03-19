@@ -3,11 +3,17 @@ global:
   gc: true
   measurements:
    - name: podLatency
+metricsEndpoints:
+  - endpoint: http://localhost:9090
+    indexer:
+      type: tsdb
+    metrics: [metrics-profile.yaml]
 jobs:
   - name: kubelet-density
     jobIterations: 25
     qps: 2
     burst: 2
+    jobPause: 30s
     preLoadImages: false
     namespacedIterations: false
     namespace: kubelet-density
