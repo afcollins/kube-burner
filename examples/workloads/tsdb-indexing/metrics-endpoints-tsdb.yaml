@@ -1,8 +1,10 @@
 - endpoint: http://localhost:9090
   indexer:
     type: tsdb
-  metrics: [metrics-histogram.yml]
+    metricsDirectory: collected-metrics-tsdb
+  metrics: [metrics-kbo.yml]
 - endpoint: http://localhost:9090
   indexer:
     type: local
-  metrics: [metrics-histogram.yml]
+    metricsDirectory: collected-metrics-local
+  metrics: [metrics-kbo.yml]

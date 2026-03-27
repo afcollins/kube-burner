@@ -43,15 +43,15 @@ export KUBE_BURNER=/Users/ancollin/go/src/github.com/kube-burner/kube-burner/bin
 
 
 # a prow 252 node run so I can use the raw dataset - sample size
-#echo 5m block
-#$KUBE_BURNER index -e metrics-endpoints-tsdb.yaml --start 1774229400 --end 1774230000
+echo 5m block
+$KUBE_BURNER index -e metrics-endpoints-tsdb.yaml --start 1774229400 --end 1774230000
 # 2 hour block:
 # (performance-dashboards) {26-03-24 13:04}ancollin-mac:~/go/src/github.com/kube-burner/kube-burner/examples/workloads/tsdb-indexing@prom-exp✗✗ ancollin% gdate +"%s" --date='2026-03-23 01:45:00Z'
 # 1774230300
 # (performance-dashboards) {26-03-24 13:05}ancollin-mac:~/go/src/github.com/kube-burner/kube-burner/examples/workloads/tsdb-indexing@prom-exp✗✗ ancollin% gdate +"%s" --date='2026-03-23 03:45:00Z'
 # 1774237500
-#echo 2h block
-#$KUBE_BURNER index -e metrics-endpoints-tsdb.yaml --start 1774230300 --end 1774237500
+echo 2h block
+$KUBE_BURNER index -e metrics-endpoints-tsdb.yaml --start 1774230300 --end 1774237500
 # Do the largest block we can from this run 01:45 to 06:30 (4h45m)
-echo 3h15m block
-$KUBE_BURNER index -e metrics-endpoints-tsdb.yaml --start 1774230300 --end 1774238400
+#echo 3h15m block
+#$KUBE_BURNER index -e metrics-endpoints-tsdb.yaml --start 1774230300 --end 1774238400
