@@ -1,5 +1,5 @@
 
-.PHONY: build build-release build-hardened build-hardened-cgo lint clean test help images push manifest manifest-build all
+.PHONY: build build-release build-hardened build-hardened-cgo lint clean test unit help images push manifest manifest-build all
 
 
 ARCH ?= $(shell uname -m | sed s/aarch64/arm64/ | sed s/x86_64/amd64/)
@@ -58,6 +58,7 @@ help:
 	@echo '    [ARCH=arch] make images       		Build images for arch, default amd64'
 	@echo '    [ARCH=arch] make push         		Push images for arch, default amd64'
 	@echo '    make manifest                 		Create and push manifest for the different architectures supported'
+	@echo '    make unit                		Run Go unit tests'
 	@echo '    make help                     		Show this message'
 
 build: $(BIN_PATH)
@@ -120,7 +121,11 @@ manifest-build:
 		$(ENGINE) manifest add $(CONTAINER_NAME) $(CONTAINER_NAME)-$${arch}; \
 	done
 
-test: lint test-k8s
+test: lint unit test-k8s
+
+unit: build
+	@echo -e "\033[2mRunning unit tests\033[0m"
+	go test ./cmd/... ./pkg/... -count=1
 
 test-k8s:
 	cd test && KUBE_BURNER=$(TEST_BINARY) bats $(if $(TEST_FILTER),--filter "$(TEST_FILTER)",) -F pretty -T --print-output-on-failure test-k8s.bats -j $(JOBS) $(FILTER_TAGS)
