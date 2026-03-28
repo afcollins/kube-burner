@@ -14,9 +14,16 @@ type Query struct {
 	expr string
 }
 
-// Q starts a new query from a metric with optional filters.
+// Q starts a new query from a metric with filters.
+// Pass "" for no filters (emits metric{}).
 func Q(metric Metric, filters string) *Query {
 	return &Query{expr: string(metric) + wrapFilters(filters)}
+}
+
+// QRaw starts a query from a metric name without appending {}.
+// Use for recording rules like "cluster:memory_usage:ratio" or bare metrics like "kube_node_role".
+func QRaw(metric Metric) *Query {
+	return &Query{expr: string(metric)}
 }
 
 // Raw starts a query from a raw PromQL string (escape hatch).
@@ -36,13 +43,56 @@ func (q *Query) IRate(interval RateInterval) *Query {
 	return q
 }
 
+// BucketRate wraps in rate() with _bucket appended to the metric name (before any filters).
+// Handles both "metric{}" → "metric_bucket{}" and "metric{filters}" → "metric_bucket{filters}".
+func (q *Query) BucketRate(interval RateInterval) *Query {
+	q.expr = fmt.Sprintf("rate(%s[%s])", insertBucket(q.expr), interval)
+	return q
+}
+
+// BucketIRate wraps in irate() with _bucket appended to the metric name (before any filters).
+func (q *Query) BucketIRate(interval RateInterval) *Query {
+	q.expr = fmt.Sprintf("irate(%s[%s])", insertBucket(q.expr), interval)
+	return q
+}
+
+// insertBucket inserts "_bucket" before the first "{" in the expression,
+// or appends it if there's no "{".
+func insertBucket(expr string) string {
+	if idx := strings.Index(expr, "{"); idx >= 0 {
+		return expr[:idx] + "_bucket" + expr[idx:]
+	}
+	return expr + "_bucket"
+}
+
 // Agg wraps in an aggregation function with optional group-by labels.
+// Produces: fn(expr) by (labels)
 func (q *Query) Agg(fn AggFunc, groupBy ...GroupBy) *Query {
 	if len(groupBy) > 0 {
 		q.expr = fmt.Sprintf("%s(%s) by (%s)", fn, q.expr, joinGroupBy(groupBy))
 	} else {
 		q.expr = fmt.Sprintf("%s(%s)", fn, q.expr)
 	}
+	return q
+}
+
+// AggBy wraps in an aggregation with "by" before the expression.
+// Produces: fn by (labels) (expr)
+// TODO: Remove after all existing profiles are regenerated; only exists to match legacy PromQL syntax.
+func (q *Query) AggBy(fn AggFunc, groupBy ...GroupBy) *Query {
+	if len(groupBy) > 0 {
+		q.expr = fmt.Sprintf("%s by (%s)(%s)", fn, joinGroupBy(groupBy), q.expr)
+	} else {
+		q.expr = fmt.Sprintf("%s(%s)", fn, q.expr)
+	}
+	return q
+}
+
+// AggBySpaced wraps in an aggregation with "by" before the expression and spaces inside parens.
+// Produces: fn by (labels) ( expr )
+// TODO: Remove after all existing profiles are regenerated; only exists to match legacy whitespace.
+func (q *Query) AggBySpaced(fn AggFunc, groupBy ...GroupBy) *Query {
+	q.expr = fmt.Sprintf("%s by (%s) ( %s )", fn, joinGroupBy(groupBy), q.expr)
 	return q
 }
 
@@ -100,9 +150,15 @@ func (q *Query) Sub(right *Query) *Query {
 	return q
 }
 
-// Div divides by another query or constant.
+// Div divides by another query.
 func (q *Query) Div(right *Query) *Query {
 	q.expr = fmt.Sprintf("%s / %s", q.expr, right.expr)
+	return q
+}
+
+// DivConst divides by a constant.
+func (q *Query) DivConst(divisor string) *Query {
+	q.expr = fmt.Sprintf("%s/%s", q.expr, divisor)
 	return q
 }
 
@@ -138,6 +194,20 @@ func (q *Query) Paren() *Query {
 	return q
 }
 
+// By appends a bare "by (labels)" clause (for use after Agg without labels, or after Paren).
+func (q *Query) By(groupBy ...GroupBy) *Query {
+	q.expr = fmt.Sprintf("%s by (%s)", q.expr, joinGroupBy(groupBy))
+	return q
+}
+
+// SpacedBy appends "by (labels)" with leading space inside sum( ... ) patterns.
+// Produces e.g. "sum( expr ) by (mode)"
+// TODO: Remove after all existing profiles are regenerated; only exists to match legacy whitespace.
+func (q *Query) SpacedBy(groupBy ...GroupBy) *Query {
+	q.expr = fmt.Sprintf("%s by (%s)", q.expr, joinGroupBy(groupBy))
+	return q
+}
+
 // String returns the built PromQL expression.
 func (q *Query) String() string {
 	return q.expr
@@ -152,10 +222,21 @@ func NodeRoleFilter(role NodeRole) *Query {
 	return Q(MetricKubeNodeRole, fmt.Sprintf(`role="%s"`, role))
 }
 
+// NodeRoleFilterExclude returns kube_node_role{role="x",role!="y"} for excluding a role.
+func NodeRoleFilterExclude(include NodeRole, exclude NodeRole) *Query {
+	return Q(MetricKubeNodeRole, fmt.Sprintf(`role="%s",role!="%s"`, include, exclude))
+}
+
 // NodeRoleLabelReplace returns a label_replace that maps "node" -> "instance"
 // for joining node-level metrics with kube_node_role.
 func NodeRoleLabelReplace(role NodeRole) *Query {
 	return Q(MetricKubeNodeRole, fmt.Sprintf(`role="%s"`, role)).
+		LabelReplace("instance", "$1", "node", "(.+)")
+}
+
+// NodeRoleLabelReplaceExclude returns label_replace with role include + exclude.
+func NodeRoleLabelReplaceExclude(include NodeRole, exclude NodeRole) *Query {
+	return Q(MetricKubeNodeRole, fmt.Sprintf(`role="%s",role!="%s"`, include, exclude)).
 		LabelReplace("instance", "$1", "node", "(.+)")
 }
 
