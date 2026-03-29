@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -45,6 +46,16 @@ func compareProfiles(t *testing.T, goldenPath string, buildFn func(g *Generator)
 	g := &Generator{}
 	buildFn(g)
 	generated := g.metrics
+
+	// Write generated YAML to temp file for inspection
+	testName := filepath.Base(goldenPath)
+	testName = strings.TrimSuffix(testName, filepath.Ext(testName))
+	if generatedYAML, err := yaml.Marshal(generated); err == nil {
+		generatedPath := filepath.Join(os.TempDir(), "generated-"+testName+".yml")
+		if err := os.WriteFile(generatedPath, generatedYAML, 0644); err == nil {
+			t.Logf("Generated YAML written to: %s", generatedPath)
+		}
+	}
 
 	if len(generated) != len(golden) {
 		t.Errorf("metric count mismatch: generated %d, golden %d", len(generated), len(golden))

@@ -119,6 +119,12 @@ func TestArithmetic(t *testing.T) {
 			expected: `irate(process_cpu_seconds_total{}[2m]) * 100`,
 		},
 		{
+			// No idea if this is a valid query. But this is the current behavior.
+			name:     "multiply-order",
+			query:    Q(MetricProcessCPU, "").Multiply("100").IRate(Rate2m),
+			expected: `irate(process_cpu_seconds_total{} * 100[2m])`,
+		},
+		{
 			name:     "subtract",
 			query:    Q(MetricNodeMemoryTotal, "").Sub(Q(MetricNodeMemoryAvailable, "")),
 			expected: `node_memory_MemTotal_bytes{} - node_memory_MemAvailable_bytes{}`,
