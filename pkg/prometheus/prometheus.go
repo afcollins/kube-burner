@@ -140,7 +140,7 @@ func (p *Prometheus) ReadProfile(location string, embedCfg *fileutils.EmbedConfi
 	p.profileName = location
 	yamlDec := yaml.NewDecoder(f)
 	yamlDec.KnownFields(true)
-	metricProfile := metricProfile{
+	metricProfile := MetricProfile{
 		name: location,
 	}
 	if err = yamlDec.Decode(&metricProfile.metrics); err != nil {

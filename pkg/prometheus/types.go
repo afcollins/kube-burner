@@ -20,6 +20,7 @@ import (
 	"github.com/cloud-bulldozer/go-commons/v2/indexers"
 	"github.com/cloud-bulldozer/go-commons/v2/prometheus"
 	"github.com/kube-burner/kube-burner/v2/pkg/config"
+	"github.com/kube-burner/kube-burner/v2/pkg/prometheus/api"
 )
 
 type Auth struct {
@@ -34,7 +35,7 @@ type Prometheus struct {
 	Client         *prometheus.Prometheus
 	Endpoint       string
 	profileName    string
-	MetricProfiles []metricProfile
+	MetricProfiles []MetricProfile
 	Step           time.Duration
 	UUID           string
 	ConfigSpec     config.Spec
@@ -50,17 +51,9 @@ type Job struct {
 	IncrementalLoadUUID string
 }
 
-type metricProfile struct {
+type MetricProfile struct {
 	name    string
-	metrics []metricDefinition
-}
-
-// metricDefinition describes what metrics kube-burner collects
-type metricDefinition struct {
-	Query        string `yaml:"query"`
-	MetricName   string `yaml:"metricName"`
-	Instant      bool   `yaml:"instant"`
-	CaptureStart bool   `yaml:"captureStart"`
+	metrics []api.MetricDefinition
 }
 
 type metric struct {
