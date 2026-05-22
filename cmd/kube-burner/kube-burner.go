@@ -382,6 +382,12 @@ func indexCmd() *cobra.Command {
 					MetricsDirectory: metricsDirectory,
 					TarballName:      tarballName,
 				}
+			} else if indexerType == string(indexers.OpenMetricsIndexer) {
+				indexer.IndexerConfig = indexers.IndexerConfig{
+					Type:             indexers.OpenMetricsIndexer,
+					MetricsDirectory: metricsDirectory,
+					TarballName:      tarballName,
+				}
 			} else {
 				indexer.IndexerConfig = indexers.IndexerConfig{
 					Type:        indexers.LocalIndexer,
@@ -407,7 +413,7 @@ func indexCmd() *cobra.Command {
 					log.Fatal(err)
 				}
 			}
-			if (configSpec.MetricsEndpoints[0].Type == indexers.LocalIndexer || configSpec.MetricsEndpoints[0].Type == indexers.TSDBIndexer) && tarballName != "" {
+			if indexers.IndexerSupportsTarball[configSpec.MetricsEndpoints[0].Type] && tarballName != "" {
 				if err := metrics.CreateTarball(configSpec.MetricsEndpoints[0].IndexerConfig); err != nil {
 					log.Fatal(err)
 				}
@@ -431,7 +437,7 @@ func indexCmd() *cobra.Command {
 	cmd.Flags().StringVar(&esServer, "es-server", "", "Elastic Search endpoint")
 	cmd.Flags().StringVar(&esIndex, "es-index", "", "Elastic Search index")
 	cmd.Flags().StringVar(&tarballName, "tarball-name", "", "Dump collected metrics into a tarball with the given name, requires local indexing")
-	cmd.Flags().StringVar(&indexerType, "indexer-type", "local", "Indexer type: local (JSON files) or tsdb (Prometheus TSDB blocks)")
+	cmd.Flags().StringVar(&indexerType, "indexer-type", "local", "Indexer type: local (JSON files), tsdb (Prometheus TSDB blocks), or openmetrics (OpenMetrics text format)")
 	cmd.Flags().BoolVar(&skipLogFile, "skip-log-file", false, "Skip writing to a log file")
 	cmd.Flags().SortFlags = false
 	return cmd
