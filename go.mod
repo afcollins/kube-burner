@@ -153,7 +153,7 @@ require (
 )
 
 replace (
-	github.com/cloud-bulldozer/go-commons/v2 => /Users/ancollin/go/src/github.com/cloud-bulldozer/go-commons
+	github.com/cloud-bulldozer/go-commons/v2 => /Users/ancollin/go/src/workspaces/indexer-openmetrics/go-commons
 	k8s.io/api => k8s.io/api v0.34.3
 	k8s.io/apimachinery => k8s.io/apimachinery v0.34.3
 	k8s.io/client-go => k8s.io/client-go v0.34.3
