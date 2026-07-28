@@ -48,6 +48,7 @@ type Job struct {
 	JobConfig           config.Job
 	UUID                string
 	IncrementalLoadUUID string
+	MetricsScraped      bool
 }
 
 type metricProfile struct {

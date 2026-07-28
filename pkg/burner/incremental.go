@@ -274,13 +274,25 @@ func (ex *JobExecutor) RunIncrementalCreateJob(
 		ex.gc(ctx, nil)
 
 		stepEnd := time.Now().UTC()
-		stepJobs = append(stepJobs, prometheus.Job{
+		stepJob := prometheus.Job{
 			Start:               stepStart,
 			End:                 stepEnd,
 			JobConfig:           ex.Job,
 			UUID:                originalUUID,
 			IncrementalLoadUUID: stepRunID,
-		})
+		}
+
+		if ex.IncrementalLoad.ScrapeMetricsPerStep && len(metricsScraper.PrometheusClients) > 0 {
+			log.Infof("Scraping prometheus metrics for incremental step (total iterations=%d)", end)
+			for _, prometheusClient := range metricsScraper.PrometheusClients {
+				if err := prometheusClient.ScrapeJobsMetrics(stepJob); err != nil {
+					log.Errorf("Error scraping metrics for incremental step: %v", err)
+				}
+			}
+			stepJob.MetricsScraped = true
+		}
+
+		stepJobs = append(stepJobs, stepJob)
 
 		if stepDelay > 0 {
 			log.Infof("Sleeping %v before next step", stepDelay)

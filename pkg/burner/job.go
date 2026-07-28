@@ -413,9 +413,14 @@ func indexMetrics(uuid string, executedJobs []prometheus.Job, returnMap map[stri
 	for _, indexer := range metricsScraper.IndexerList {
 		IndexJobSummary(jobSummaries, indexer)
 	}
-	// Scrape prometheus metrics for all executed jobs
+	var unscrapedJobs []prometheus.Job
+	for _, job := range executedJobs {
+		if !job.MetricsScraped {
+			unscrapedJobs = append(unscrapedJobs, job)
+		}
+	}
 	for _, prometheusClient := range metricsScraper.PrometheusClients {
-		prometheusClient.ScrapeJobsMetrics(executedJobs...)
+		prometheusClient.ScrapeJobsMetrics(unscrapedJobs...)
 	}
 	for _, indexer := range configSpec.MetricsEndpoints {
 		if util.IsLocalIndexer(indexer.Type) && indexer.CreateTarball {
