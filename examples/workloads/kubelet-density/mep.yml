@@ -1,0 +1,6 @@
+- endpoint: https://prometheus-k8s-openshift-monitoring.apps-crc.testing
+  tokenFile: /root/.crc-token
+  metrics:
+  - /root/git/kube-burner/examples/metrics-profiles/metrics.yaml
+  indexer:
+    type: local

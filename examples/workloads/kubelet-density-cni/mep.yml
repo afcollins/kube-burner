@@ -1,0 +1,17 @@
+- endpoint: http://localhost:9090
+  metrics:
+  - /root/git/kube-burner/examples/metrics-profiles/metrics.yaml
+  indexer:
+    type: local
+- endpoint: http://localhost:9090
+  metrics:
+  - /root/git/performance-dashboards/go/merged-metrics.yaml
+  indexer:
+    type: tsdb
+    metricsDirectory: collected-metrics/rules/
+- endpoint: http://localhost:9090
+  metrics:
+  - /root/git/performance-dashboards/go/merged-raw-metrics.yaml
+  indexer:
+    type: tsdb
+    metricsDirectory: collected-metrics/raw
