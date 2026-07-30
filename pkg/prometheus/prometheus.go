@@ -28,6 +28,7 @@ import (
 	"github.com/kube-burner/kube-burner/v2/pkg/util"
 	"github.com/kube-burner/kube-burner/v2/pkg/util/fileutils"
 	"github.com/prometheus/common/model"
+	"github.com/prometheus/prometheus/model/labels"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
@@ -250,4 +251,23 @@ func (p *Prometheus) indexDatapoints(docsToIndex map[string][]any) {
 			log.Debug(resp)
 		}
 	}
+}
+
+func (m metric) ToTSDBSamples(metricName string) []indexers.TSDBSample {
+	b := labels.NewBuilder(labels.EmptyLabels())
+	b.Set(labels.MetricName, metricName)
+	for k, v := range m.Labels {
+		b.Set(k, v)
+	}
+	if m.UUID != "" {
+		b.Set("uuid", m.UUID)
+	}
+	if m.JobName != "" {
+		b.Set("job_name", m.JobName)
+	}
+	return []indexers.TSDBSample{{
+		Labels:    b.Labels(),
+		Timestamp: m.Timestamp.UnixMilli(),
+		Value:     m.Value,
+	}}
 }
