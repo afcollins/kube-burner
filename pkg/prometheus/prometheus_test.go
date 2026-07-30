@@ -21,6 +21,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/cloud-bulldozer/go-commons/v2/indexers"
 	"github.com/kube-burner/kube-burner/v2/pkg/config"
 	"github.com/prometheus/common/model"
 )
@@ -113,5 +114,59 @@ var _ = Describe("createMetric groupId tagging", func() {
 			Expect(ok).To(BeTrue())
 			Expect(meta).ToNot(HaveKey("groupId"))
 		})
+	})
+})
+
+var _ indexers.TSDBSampleConvertible = metric{}
+
+var _ = Describe("metric.ToTSDBSamples", func() {
+	It("produces correct labels, timestamp, and value", func() {
+		ts := time.Date(2025, 1, 15, 10, 30, 0, 0, time.UTC)
+		m := metric{
+			Timestamp:  ts,
+			Labels:     map[string]string{"instance": "node1", "namespace": "default"},
+			Value:      42.5,
+			UUID:       "test-uuid",
+			MetricName: "cpuUsage",
+			JobName:    "test-job",
+		}
+
+		samples := m.ToTSDBSamples("cpuUsage")
+		Expect(samples).To(HaveLen(1))
+
+		s := samples[0]
+		Expect(s.Value).To(Equal(42.5))
+		Expect(s.Timestamp).To(Equal(ts.UnixMilli()))
+		Expect(s.Labels.Get("__name__")).To(Equal("cpuUsage"))
+		Expect(s.Labels.Get("instance")).To(Equal("node1"))
+		Expect(s.Labels.Get("namespace")).To(Equal("default"))
+		Expect(s.Labels.Get("uuid")).To(Equal("test-uuid"))
+		Expect(s.Labels.Get("job_name")).To(Equal("test-job"))
+	})
+
+	It("omits uuid and job_name labels when empty", func() {
+		ts := time.Now().UTC()
+		m := metric{
+			Timestamp: ts,
+			Labels:    map[string]string{"foo": "bar"},
+			Value:     1.0,
+		}
+
+		samples := m.ToTSDBSamples("myMetric")
+		Expect(samples).To(HaveLen(1))
+		Expect(samples[0].Labels.Get("uuid")).To(Equal(""))
+		Expect(samples[0].Labels.Get("job_name")).To(Equal(""))
+		Expect(samples[0].Labels.Get("foo")).To(Equal("bar"))
+	})
+
+	It("uses metricName argument, not struct field", func() {
+		m := metric{
+			Timestamp:  time.Now().UTC(),
+			Value:      1.0,
+			MetricName: "structName",
+		}
+
+		samples := m.ToTSDBSamples("overrideName")
+		Expect(samples[0].Labels.Get("__name__")).To(Equal("overrideName"))
 	})
 })
