@@ -29,6 +29,7 @@ import (
 	"github.com/kube-burner/kube-burner/v2/pkg/util"
 	"github.com/kube-burner/kube-burner/v2/pkg/util/fileutils"
 	"github.com/kube-burner/kube-burner/v2/pkg/util/metrics"
+	"github.com/cloud-bulldozer/go-commons/v2/version"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -290,6 +291,25 @@ func (ex *JobExecutor) RunIncrementalCreateJob(
 				}
 			}
 			stepJob.MetricsScraped = true
+
+			if !ex.SkipIndexing {
+				elapsedTime := stepEnd.Sub(stepStart).Round(time.Second).Seconds()
+				stepSummary := JobSummary{
+					UUID:                originalUUID,
+					IncrementalLoadUUID: stepRunID,
+					Timestamp:           stepStart,
+					EndTimestamp:        stepEnd,
+					ElapsedTime:         elapsedTime,
+					JobConfig:           ex.Job,
+					Metadata:            stepMetadata,
+					Passed:              true,
+					Version:             fmt.Sprintf("%v@%v", version.Version, version.GitCommit),
+					MetricName:          jobSummaryMetric,
+				}
+				for _, indexer := range metricsScraper.IndexerList {
+					IndexJobSummary([]JobSummary{stepSummary}, indexer)
+				}
+			}
 		}
 
 		stepJobs = append(stepJobs, stepJob)
