@@ -20,7 +20,11 @@ import (
 
 	"github.com/cloud-bulldozer/go-commons/v2/indexers"
 	"github.com/kube-burner/kube-burner/v2/pkg/config"
+	"github.com/kube-burner/kube-burner/v2/pkg/prometheus"
+	"github.com/kube-burner/kube-burner/v2/pkg/util/metrics"
 )
+
+const testUuid = "test-uuid"
 
 type mockIndexer struct {
 	indexed []indexers.IndexingOpts
@@ -37,11 +41,11 @@ func TestIndexJobSummary(t *testing.T) {
 	now := time.Now().UTC()
 	summaries := []JobSummary{
 		{
-			UUID:                "test-uuid",
+			UUID:                testUuid,
 			IncrementalLoadUUID: "step-uuid-1",
 			Timestamp:           now,
 			EndTimestamp:        now.Add(30 * time.Second),
-			ElapsedTime:        30,
+			ElapsedTime:         30,
 			JobConfig:           config.Job{Name: "test-job"},
 			Metadata:            map[string]any{"incrementalLoadUUID": "step-uuid-1", "platform": "test"},
 			Passed:              true,
@@ -64,8 +68,8 @@ func TestIndexJobSummary(t *testing.T) {
 	}
 
 	doc := mock.docs[0][0].(map[string]any)
-	if doc["uuid"] != "test-uuid" {
-		t.Errorf("expected uuid %q, got %v", "test-uuid", doc["uuid"])
+	if doc["uuid"] != testUuid {
+		t.Errorf("expected uuid %q, got %v", testUuid, doc["uuid"])
 	}
 	if doc["incrementalLoadUUID"] != "step-uuid-1" {
 		t.Errorf("expected incrementalLoadUUID %q, got %v", "step-uuid-1", doc["incrementalLoadUUID"])
@@ -88,22 +92,22 @@ func TestIndexJobSummaryMultipleSteps(t *testing.T) {
 	now := time.Now().UTC()
 	summaries := []JobSummary{
 		{
-			UUID:                "test-uuid",
+			UUID:                testUuid,
 			IncrementalLoadUUID: "step-1",
 			Timestamp:           now,
 			EndTimestamp:        now.Add(10 * time.Second),
-			ElapsedTime:        10,
+			ElapsedTime:         10,
 			JobConfig:           config.Job{Name: "test-job"},
 			Metadata:            map[string]any{"incrementalLoadUUID": "step-1"},
 			Passed:              true,
 			MetricName:          jobSummaryMetric,
 		},
 		{
-			UUID:                "test-uuid",
+			UUID:                testUuid,
 			IncrementalLoadUUID: "step-2",
 			Timestamp:           now.Add(10 * time.Second),
 			EndTimestamp:        now.Add(25 * time.Second),
-			ElapsedTime:        15,
+			ElapsedTime:         15,
 			JobConfig:           config.Job{Name: "test-job"},
 			Metadata:            map[string]any{"incrementalLoadUUID": "step-2"},
 			Passed:              true,
@@ -127,7 +131,7 @@ func TestIndexJobSummaryMultipleSteps(t *testing.T) {
 	if doc2["incrementalLoadUUID"] != "step-2" {
 		t.Errorf("doc2: expected incrementalLoadUUID step-2, got %v", doc2["incrementalLoadUUID"])
 	}
-	if doc1["uuid"] != "test-uuid" || doc2["uuid"] != "test-uuid" {
+	if doc1["uuid"] != testUuid || doc2["uuid"] != testUuid {
 		t.Error("both docs should share same uuid")
 	}
 }
@@ -153,8 +157,64 @@ func TestIndexJobSummaryMetadataMerged(t *testing.T) {
 	if doc["cluster"] != "perf-cluster" {
 		t.Errorf("expected metadata field cluster=perf-cluster, got %v", doc["cluster"])
 	}
-	// incrementalLoadUUID from Metadata overwrites the JSON-marshalled field
+	// incrementalLoadUUID from Metadata overwrites the JSON-marshaled field
 	if doc["incrementalLoadUUID"] != "step-x" {
 		t.Errorf("expected incrementalLoadUUID from metadata, got %v", doc["incrementalLoadUUID"])
+	}
+}
+
+func TestIndexMetricsSkipsAlreadyScrapedJobSummary(t *testing.T) {
+	now := time.Now().UTC()
+	mock := &mockIndexer{}
+
+	executedJobs := []prometheus.Job{
+		{
+			Start:               now,
+			End:                 now.Add(10 * time.Second),
+			JobConfig:           config.Job{Name: "job1"},
+			UUID:                "uuid-1",
+			IncrementalLoadUUID: "step-1",
+			MetricsScraped:      true,
+		},
+		{
+			Start:               now.Add(10 * time.Second),
+			End:                 now.Add(20 * time.Second),
+			JobConfig:           config.Job{Name: "job1"},
+			UUID:                "uuid-1",
+			IncrementalLoadUUID: "step-2",
+			MetricsScraped:      false,
+		},
+		{
+			Start:     now,
+			End:       now.Add(20 * time.Second),
+			JobConfig: config.Job{Name: "job1"},
+			UUID:      "uuid-1",
+		},
+	}
+
+	scraper := metrics.Scraper{
+		IndexerList:     map[string]indexers.Indexer{"mock": mock},
+		SummaryMetadata: map[string]any{"platform": "test"},
+	}
+
+	indexMetrics("uuid-1", executedJobs, map[string]returnPair{}, scraper, config.Spec{}, true, "", false)
+
+	if len(mock.indexed) != 1 {
+		t.Fatalf("expected 1 IndexJobSummary call, got %d", len(mock.indexed))
+	}
+
+	docs := mock.docs[0]
+	if len(docs) != 2 {
+		t.Fatalf("expected 2 job summaries (skipping MetricsScraped=true), got %d", len(docs))
+	}
+
+	doc1 := docs[0].(map[string]any)
+	doc2 := docs[1].(map[string]any)
+
+	if doc1["incrementalLoadUUID"] != "step-2" {
+		t.Errorf("first summary should be step-2 (unscraped), got %v", doc1["incrementalLoadUUID"])
+	}
+	if _, has := doc2["incrementalLoadUUID"]; has && doc2["incrementalLoadUUID"] != "" {
+		t.Errorf("second summary should be the parent job with no incrementalLoadUUID, got %v", doc2["incrementalLoadUUID"])
 	}
 }

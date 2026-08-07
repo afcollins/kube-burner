@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/cloud-bulldozer/go-commons/v2/indexers"
+	"github.com/cloud-bulldozer/go-commons/v2/version"
 	"github.com/google/uuid"
 	"github.com/kube-burner/kube-burner/v2/pkg/config"
 	"github.com/kube-burner/kube-burner/v2/pkg/measurements"
@@ -29,7 +30,6 @@ import (
 	"github.com/kube-burner/kube-burner/v2/pkg/util"
 	"github.com/kube-burner/kube-burner/v2/pkg/util/fileutils"
 	"github.com/kube-burner/kube-burner/v2/pkg/util/metrics"
-	"github.com/cloud-bulldozer/go-commons/v2/version"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -290,8 +290,6 @@ func (ex *JobExecutor) RunIncrementalCreateJob(
 					log.Errorf("Error scraping metrics for incremental step: %v", err)
 				}
 			}
-			stepJob.MetricsScraped = true
-
 			if !ex.SkipIndexing {
 				elapsedTime := stepEnd.Sub(stepStart).Round(time.Second).Seconds()
 				stepSummary := JobSummary{
@@ -310,6 +308,7 @@ func (ex *JobExecutor) RunIncrementalCreateJob(
 					IndexJobSummary([]JobSummary{stepSummary}, indexer)
 				}
 			}
+			stepJob.MetricsScraped = true
 		}
 
 		stepJobs = append(stepJobs, stepJob)

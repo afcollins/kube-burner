@@ -387,7 +387,7 @@ func indexMetrics(uuid string, executedJobs []prometheus.Job, returnMap map[stri
 	var jobSummaries []JobSummary
 
 	for _, job := range executedJobs {
-		if !job.JobConfig.SkipIndexing {
+		if !job.JobConfig.SkipIndexing && !job.MetricsScraped {
 			if value, exists := returnMap[job.JobConfig.Name]; exists && !isTimeout {
 				innerRC = value.innerRC == 0
 				executionErrors = value.executionErrors
