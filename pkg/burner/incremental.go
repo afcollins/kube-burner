@@ -271,11 +271,8 @@ func (ex *JobExecutor) RunIncrementalCreateJob(
 			}
 		}
 
-		log.Infof("Running garbage collection for job %s (uuid=%s) after incremental step", ex.Name, ex.uuid)
-		ex.gc(ctx, nil)
-
 		stepEnd := time.Now().UTC()
-		stepJob := prometheus.Job{
+		workJob := prometheus.Job{
 			Start:               stepStart,
 			End:                 stepEnd,
 			JobConfig:           ex.Job,
@@ -283,35 +280,27 @@ func (ex *JobExecutor) RunIncrementalCreateJob(
 			IncrementalLoadUUID: stepRunID,
 		}
 
-		if ex.IncrementalLoad.ScrapeMetricsPerStep && len(metricsScraper.PrometheusClients) > 0 {
-			log.Infof("Scraping prometheus metrics for incremental step (total iterations=%d)", end)
-			for _, prometheusClient := range metricsScraper.PrometheusClients {
-				if err := prometheusClient.ScrapeJobsMetrics(stepJob); err != nil {
-					log.Errorf("Error scraping metrics for incremental step: %v", err)
-				}
-			}
-			if !ex.SkipIndexing {
-				elapsedTime := stepEnd.Sub(stepStart).Round(time.Second).Seconds()
-				stepSummary := JobSummary{
-					UUID:                originalUUID,
-					IncrementalLoadUUID: stepRunID,
-					Timestamp:           stepStart,
-					EndTimestamp:        stepEnd,
-					ElapsedTime:         elapsedTime,
-					JobConfig:           ex.Job,
-					Metadata:            stepMetadata,
-					Passed:              true,
-					Version:             fmt.Sprintf("%v@%v", version.Version, version.GitCommit),
-					MetricName:          jobSummaryMetric,
-				}
-				for _, indexer := range metricsScraper.IndexerList {
-					IndexJobSummary([]JobSummary{stepSummary}, indexer)
-				}
-			}
-			stepJob.MetricsScraped = true
-		}
+		scrapeStepMetrics(ex, &workJob, stepMetadata, metricsScraper, end)
+		stepJobs = append(stepJobs, workJob)
 
-		stepJobs = append(stepJobs, stepJob)
+		log.Infof("Running garbage collection for job %s (uuid=%s) after incremental step", ex.Name, ex.uuid)
+		gcStart := time.Now().UTC()
+		ex.gc(ctx, nil)
+		gcEnd := time.Now().UTC()
+
+		if configSpec.GlobalConfig.GCMetrics {
+			gcJob := prometheus.Job{
+				Start: gcStart,
+				End:   gcEnd,
+				JobConfig: config.Job{
+					Name: garbageCollectionJob,
+				},
+				UUID:                originalUUID,
+				IncrementalLoadUUID: stepRunID,
+			}
+			scrapeStepMetrics(ex, &gcJob, stepMetadata, metricsScraper, end)
+			stepJobs = append(stepJobs, gcJob)
+		}
 
 		if stepDelay > 0 {
 			log.Infof("Sleeping %v before next step", stepDelay)
@@ -319,6 +308,42 @@ func (ex *JobExecutor) RunIncrementalCreateJob(
 		}
 
 		current = end
+	}
+}
+
+// scrapeStepMetrics handles per-step prometheus scraping and jobSummary indexing.
+func scrapeStepMetrics(ex *JobExecutor, job *prometheus.Job, stepMetadata map[string]any, metricsScraper metrics.Scraper, iterations int) {
+	if !ex.IncrementalLoad.ScrapeMetricsPerStep {
+		return
+	}
+
+	if len(metricsScraper.PrometheusClients) > 0 {
+		log.Infof("Scraping prometheus metrics for incremental step (total iterations=%d)", iterations)
+		for _, prometheusClient := range metricsScraper.PrometheusClients {
+			if err := prometheusClient.ScrapeJobsMetrics(*job); err != nil {
+				log.Errorf("Error scraping metrics for incremental step: %v", err)
+			}
+		}
+		job.MetricsScraped = true
+	}
+
+	if !ex.SkipIndexing {
+		elapsedTime := job.End.Sub(job.Start).Round(time.Second).Seconds()
+		stepSummary := JobSummary{
+			UUID:                job.UUID,
+			IncrementalLoadUUID: job.IncrementalLoadUUID,
+			Timestamp:           job.Start,
+			EndTimestamp:        job.End,
+			ElapsedTime:         elapsedTime,
+			JobConfig:           ex.Job,
+			Metadata:            stepMetadata,
+			Passed:              true,
+			Version:             fmt.Sprintf("%v@%v", version.Version, version.GitCommit),
+			MetricName:          jobSummaryMetric,
+		}
+		for _, indexer := range metricsScraper.IndexerList {
+			IndexJobSummary([]JobSummary{stepSummary}, indexer)
+		}
 	}
 }
 

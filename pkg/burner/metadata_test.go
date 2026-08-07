@@ -218,3 +218,50 @@ func TestIndexMetricsSkipsAlreadyScrapedJobSummary(t *testing.T) {
 		t.Errorf("second summary should be the parent job with no incrementalLoadUUID, got %v", doc2["incrementalLoadUUID"])
 	}
 }
+
+func TestIndexMetricsSkipsScrapedGCJobSummary(t *testing.T) {
+	now := time.Now().UTC()
+	mock := &mockIndexer{}
+
+	executedJobs := []prometheus.Job{
+		{
+			Start:               now,
+			End:                 now.Add(10 * time.Second),
+			JobConfig:           config.Job{Name: "job1"},
+			UUID:                "uuid-1",
+			IncrementalLoadUUID: "step-1",
+			MetricsScraped:      true,
+		},
+		{
+			Start:               now.Add(10 * time.Second),
+			End:                 now.Add(15 * time.Second),
+			JobConfig:           config.Job{Name: garbageCollectionJob},
+			UUID:                "uuid-1",
+			IncrementalLoadUUID: "step-1",
+			MetricsScraped:      true,
+		},
+		{
+			Start:     now,
+			End:       now.Add(15 * time.Second),
+			JobConfig: config.Job{Name: "job1"},
+			UUID:      "uuid-1",
+		},
+	}
+
+	scraper := metrics.Scraper{
+		IndexerList:     map[string]indexers.Indexer{"mock": mock},
+		SummaryMetadata: map[string]any{"platform": "test"},
+	}
+
+	indexMetrics("uuid-1", executedJobs, map[string]returnPair{}, scraper, config.Spec{}, true, "", false)
+
+	docs := mock.docs[0]
+	if len(docs) != 1 {
+		t.Fatalf("expected 1 job summary (work+gc scraped, only parent remains), got %d", len(docs))
+	}
+
+	doc := docs[0].(map[string]any)
+	if doc["jobConfig"].(map[string]any)["name"] != "job1" {
+		t.Errorf("expected parent job summary for job1, got %v", doc["jobConfig"])
+	}
+}
