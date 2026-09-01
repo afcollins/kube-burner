@@ -19,7 +19,7 @@ spec:
           value: webserver-{{.Replica}}-{{.Iteration}}
         - name: WEBSERVER_PORT
           value: "8080"
-        imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         securityContext:
           privileged: false
         startupProbe:

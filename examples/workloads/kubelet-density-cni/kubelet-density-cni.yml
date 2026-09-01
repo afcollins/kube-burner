@@ -1,5 +1,6 @@
 ---
 global:
+  gcMetrics: true
   measurements:
     - name: podLatency
 

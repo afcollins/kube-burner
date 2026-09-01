@@ -16,7 +16,7 @@ spec:
         ports:
         - containerPort: 8080
           protocol: TCP
-        imagePullPolicy: Never
+        imagePullPolicy: IfNotPresent
         securityContext:
           privileged: false
       restartPolicy: Always
